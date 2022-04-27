@@ -12,13 +12,7 @@ public class PlayerController : MonoBehaviour
     private GameController gameController;
 
     private float acceleration = 1;
-    private float doubleClickTimeLimit = 0.25f;
     private int rechargeShootTimer = 0;
-
-    private void Start()
-    {
-        StartCoroutine(InputListener());
-    }
 
     private void FixedUpdate()
     {
@@ -26,6 +20,11 @@ public class PlayerController : MonoBehaviour
         {
             Movement();
             Rotate();
+
+            if(InputController.IsDoubleTap())
+            {
+                Shoot();
+            }
         }
     }
 
@@ -39,9 +38,11 @@ public class PlayerController : MonoBehaviour
 
     private void Rotate()
     {
-        if (GetTouchPosition().x != 0)
+        var touchPosition = InputController.GetTouchPosition();
+
+        if (touchPosition.x != 0)
         {
-            if (GetTouchPosition().x > Screen.width * 0.5f)
+            if (touchPosition.x > Screen.width * 0.5f)
             {
                 transform.rotation *= Quaternion.Euler(0, 90f * Time.deltaTime, 0);
             }
@@ -69,36 +70,6 @@ public class PlayerController : MonoBehaviour
 
     #region Helpers
 
-    private IEnumerator InputListener()
-    {
-        while (enabled)
-        {
-            if (Input.GetMouseButtonDown(0))
-            {
-                yield return ClickEvent();
-            }
-
-            yield return null;
-        }
-    }
-
-    private IEnumerator ClickEvent()
-    {
-        yield return new WaitForEndOfFrame();
-
-        float count = 0f;
-        while (count < doubleClickTimeLimit)
-        {
-            if (Input.GetMouseButtonDown(0))
-            {
-                Shoot();
-                yield break;
-            }
-            count += Time.deltaTime;
-            yield return null;
-        }
-    }
-
     private IEnumerator TimerRecovery()
     {
         float temp = rechargeShootTimer;
@@ -109,23 +80,6 @@ public class PlayerController : MonoBehaviour
             yield return null;
         }
         rechargeShootTimer = (int)temp;
-    }
-
-    private Vector2 GetTouchPosition()
-    {
-        Vector2 touchPosition = new Vector2();
-#if UNITY_EDITOR || UNITY_STANDALONE
-        if (Input.GetMouseButton(0))
-        {
-            touchPosition = Input.mousePosition;
-        }
-#elif UNITY_ANDROID || UNITY_IOS
-        if (Input.touchCount > 0)
-        {
-            touchPosition = Input.GetTouch(0).position;
-        }
-#endif
-        return touchPosition;
     }
 
     #endregion
