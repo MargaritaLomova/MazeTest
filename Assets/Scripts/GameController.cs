@@ -4,32 +4,26 @@ using UnityEngine;
 
 public class GameController : MonoBehaviour
 {
-    [Header("Variables To Level Control"), SerializeField]
-    private float distanceFromMazeEnd = 8;
+    [Header("Variables To Level Control")]
+    [SerializeField] private float distanceFromMazeEnd = 8;
 
-    [Header("Preafbs"), SerializeField]
-    private CellInfo cellPrefab;
-    [SerializeField]
-    private MazeInfo mazePrefab;
+    [Header("Preafbs")]
+    [SerializeField] private CellInfo cellPrefab;
+    [SerializeField] private MazeInfo mazePrefab;
 
-    [Header("Objects From Scene"), SerializeField]
-    private Transform player;
-    [SerializeField]
-    private CameraController localCamera;
+    [Header("Objects From Scene")]
+    [SerializeField] private PlayerController player;
+    [SerializeField] private CameraController localCamera;
 
-    [Header("UI"), SerializeField]
-    private TMP_Text scoreText;
-    [SerializeField]
-    private GameObject deathInterface;
-    [SerializeField]
-    private TMP_Text finalScore;
-    [SerializeField]
-    private GameObject menuInterface;
-    [SerializeField]
-    private GameObject shopInterface;
+    [Header("UI")]
+    [SerializeField] private GameObject gameInterface;
+    [SerializeField] private TMP_Text scoreText;
+    [SerializeField] private GameObject deathInterface;
+    [SerializeField] private TMP_Text finalScore;
+    [SerializeField] private GameObject menuInterface;
+    [SerializeField] private GameObject shopInterface;
 
-    [HideInInspector]
-    public bool isPlay;
+    public bool isPlay { get; private set; }
 
     private List<MazeInfo> spawnedMazes = new List<MazeInfo>();
     private float timeFromStart;
@@ -37,7 +31,7 @@ public class GameController : MonoBehaviour
 
     private void Start()
     {
-        playerStartPosition = player.position;
+        playerStartPosition = player.transform.position;
         OnMenuClicked();
     }
 
@@ -61,13 +55,15 @@ public class GameController : MonoBehaviour
     private void Death()
     {
         isPlay = false;
+        gameInterface.SetActive(false);
+
         deathInterface.SetActive(true);
         finalScore.text = $"You lasted {(int)timeFromStart} seconds!";
     }
 
     private bool IsPlayerInCameraView()
     {
-        Vector3 screenPoint = Camera.main.WorldToViewportPoint(player.position);
+        Vector3 screenPoint = Camera.main.WorldToViewportPoint(player.transform.position);
         return screenPoint.z > 0 && screenPoint.x > 0 && screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
     }
 
@@ -81,7 +77,7 @@ public class GameController : MonoBehaviour
 
     public void OnPlayClicked()
     {
-        player.position = playerStartPosition;
+        player.transform.position = playerStartPosition;
         localCamera.FastFocusOnPlayer();
 
         timeFromStart = 0;
@@ -89,6 +85,8 @@ public class GameController : MonoBehaviour
         ClearAllMazes();
 
         isPlay = true;
+
+        gameInterface.SetActive(true);
 
         menuInterface.SetActive(false);
         deathInterface.SetActive(false);
@@ -103,17 +101,26 @@ public class GameController : MonoBehaviour
     {
         menuInterface.SetActive(false);
         deathInterface.SetActive(false);
+        gameInterface.SetActive(false);
+
         shopInterface.SetActive(true);
     }
 
-    public void OnRestratClicked()
+    public void OnRestartClicked()
     {
         OnPlayClicked();
+    }
+
+    public void OnFireClicked()
+    {
+        player.Shoot();
     }
 
     public void OnMenuClicked()
     {
         menuInterface.SetActive(true);
+
+        gameInterface.SetActive(false);
         deathInterface.SetActive(false);
         shopInterface.SetActive(false);
 
@@ -128,10 +135,10 @@ public class GameController : MonoBehaviour
     {
         var nearestMazePart = GetNearestMazePart();
 
-        var playerNearUp = player.position.x < nearestMazePart.up.position.x + distanceFromMazeEnd;
-        var playerNearDown = player.position.x > nearestMazePart.down.position.x - distanceFromMazeEnd;
-        var playerNearLeft = player.position.z < nearestMazePart.left.position.z + distanceFromMazeEnd;
-        var playerNearRight = player.position.z > nearestMazePart.right.position.z - distanceFromMazeEnd;
+        var playerNearUp = player.transform.position.x < nearestMazePart.up.position.x + distanceFromMazeEnd;
+        var playerNearDown = player.transform.position.x > nearestMazePart.down.position.x - distanceFromMazeEnd;
+        var playerNearLeft = player.transform.position.z < nearestMazePart.left.position.z + distanceFromMazeEnd;
+        var playerNearRight = player.transform.position.z > nearestMazePart.right.position.z - distanceFromMazeEnd;
         var isNeedToGenerateNewMazePart = playerNearUp || playerNearDown || playerNearLeft || playerNearRight;
 
         if (isNeedToGenerateNewMazePart)
@@ -209,7 +216,7 @@ public class GameController : MonoBehaviour
     {
 
         float minDist = Mathf.Infinity;
-        Vector3 currentPlayerPos = player.position;
+        Vector3 currentPlayerPos = player.transform.position;
         List<GameObject> walls = new List<GameObject>();
         foreach (var mazePart in spawnedMazes)
         {
@@ -235,7 +242,7 @@ public class GameController : MonoBehaviour
     {
         MazeInfo nearestMazePart = new MazeInfo();
         float minDist = Mathf.Infinity;
-        Vector3 currentPlayerPos = player.position;
+        Vector3 currentPlayerPos = player.transform.position;
         foreach (var mazePart in spawnedMazes)
         {
             float dist = Vector3.Distance(mazePart.transform.position, currentPlayerPos);
@@ -252,7 +259,7 @@ public class GameController : MonoBehaviour
     {
         MazeInfo nearestMazePart = new MazeInfo();
         float maxDist = 20;
-        Vector3 currentPlayerPos = player.position;
+        Vector3 currentPlayerPos = player.transform.position;
         foreach (var mazePart in spawnedMazes)
         {
             float dist = Vector3.Distance(mazePart.transform.position, currentPlayerPos);
@@ -291,7 +298,7 @@ public class GameController : MonoBehaviour
 
     private void ClearAllMazes()
     {
-        foreach(var maze in spawnedMazes)
+        foreach (var maze in spawnedMazes)
         {
             Destroy(maze.gameObject);
         }
